@@ -5,6 +5,8 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/Ag
 
 import {PriceConverter} from "./PriceConverter.sol";
 
+error NotOwner();
+
 contract FundMe {
     // this attaches PriceConverter library for all uint256 types and now they can access all func inside that lib
     using PriceConverter for uint256;
@@ -53,12 +55,26 @@ contract FundMe {
 
         // call = lower lvl function - returns bool and data
         // (bool callSuccess, bytes memory dataReturned) = payable(msg.sender).call{value: address(this).balance}("");
-        (bool callSuccess, ) = payable(msg.sender).call{value: address(this).balance}("");
+        (bool callSuccess, ) = payable(msg.sender).call{
+            value: address(this).balance
+        }("");
         require(callSuccess, "Call failed");
     }
 
+    receive() external payable {
+        fund();
+    }
+
+    fallback() external payable {
+        fund();
+    }
+
     modifier onlyOwner() {
-        require(msg.sender == i_owner, "Must be owner to call this func");
+        //  require(msg.sender == i_owner, "Must be owner to call this func");
+        if (msg.sender != i_owner) {
+            revert NotOwner();
+        }
+
         // adds rest of the modified function
         _;
     }
